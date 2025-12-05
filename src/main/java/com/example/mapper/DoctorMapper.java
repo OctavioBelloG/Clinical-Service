@@ -1,62 +1,54 @@
 package com.example.mapper;
 
-import com.example.model.Doctor;
-import com.example.model.Specialty;
 import com.example.dto.DoctorRequest;
 import com.example.dto.DoctorResponse;
+import com.example.model.Doctor;
+import com.example.model.Specialty;
 
-public final class DoctorMapper {
+public class DoctorMapper {
 
-    public static DoctorResponse toResponse(Doctor d) {
-        if (d == null) return null;
-        return DoctorResponse.builder()
-                .doctorId(d.getDoctorId())
-                // CAMBIO: ID directo
-                .userId(d.getUserId())
-                .specialtyId(d.getSpecialty() != null ? d.getSpecialty().getSpecialtyId() : null)
-                .fullName(d.getFullName())
-                .registrationNumber(d.getRegistrationNumber())
-                .rating(d.getRating())
-                .build();
+    public static Doctor toEntity(DoctorRequest req) {
+        Doctor doctor = new Doctor();
+        doctor.setUserId(req.getUserId());
+        doctor.setFullName(req.getFullName());
+        doctor.setRegistrationNumber(req.getRegistrationNumber());
+        doctor.setRating(req.getRating());
+        
+        // La relación de especialidad se suele setear en el servicio buscando por ID,
+        // pero aquí dejamos la estructura básica.
+        Specialty specialty = new Specialty();
+        specialty.setSpecialtyId(req.getSpecialtyId());
+        doctor.setSpecialty(specialty);
+        
+        return doctor;
     }
 
-    public static Doctor toEntity(DoctorRequest dto) {
-        if (dto == null) return null;
-        Doctor d = new Doctor();
-        d.setFullName(dto.getFullName());
-        d.setRegistrationNumber(dto.getRegistrationNumber());
-        d.setRating(dto.getRating());
-        
-        // CAMBIO: Asignación directa de ID de usuario
-        if (dto.getUserId() != null) {
-            d.setUserId(dto.getUserId());
-        }
+    public static DoctorResponse toResponse(Doctor doctor) {
+        DoctorResponse res = new DoctorResponse();
+        res.setDoctorId(doctor.getDoctorId());
+        res.setUserId(doctor.getUserId());
+        res.setFullName(doctor.getFullName());
+        res.setRegistrationNumber(doctor.getRegistrationNumber());
+        res.setRating(doctor.getRating());
 
-        if (dto.getSpecialtyId() != null) {
-            Specialty s = new Specialty();
-            s.setSpecialtyId(dto.getSpecialtyId());
-            d.setSpecialty(s);
+        // --- CORRECCIÓN PARA QUE SALGA EL NOMBRE DE LA ESPECIALIDAD ---
+        if (doctor.getSpecialty() != null) {
+            // Aquí asignamos el nombre al campo que mapeamos con @JsonProperty("specialty")
+            res.setSpecialtyName(doctor.getSpecialty().getName());
         }
-        return d;
+        
+        // NOTA SOBRE EL USUARIO:
+        // Como el nombre del usuario vive en OTRO microservicio, 
+        // aquí seguirá siendo null a menos que hagas una llamada extra para obtenerlo.
+        // Gracias al @JsonInclude, si es null, simplemente no aparecerá.
+        
+        return res;
     }
 
-    public static void copyToEntity(DoctorRequest dto, Doctor entity) {
-        if (dto == null || entity == null) return;
-        entity.setFullName(dto.getFullName());
-        entity.setRegistrationNumber(dto.getRegistrationNumber());
-        entity.setRating(dto.getRating());
-        
-        // CAMBIO: Actualización de ID
-        if (dto.getUserId() != null) {
-            entity.setUserId(dto.getUserId());
-        }
-        
-        if (dto.getSpecialtyId() != null) {
-            Specialty s = new Specialty();
-            s.setSpecialtyId(dto.getSpecialtyId());
-            entity.setSpecialty(s);
-        } else {
-            entity.setSpecialty(null);
-        }
+    public static void copyToEntity(DoctorRequest req, Doctor doctor) {
+        doctor.setFullName(req.getFullName());
+        doctor.setRegistrationNumber(req.getRegistrationNumber());
+        doctor.setRating(req.getRating());
+        // Actualizar relaciones requeriría lógica extra en el servicio
     }
 }
